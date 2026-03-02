@@ -83,12 +83,29 @@ class ProductService:
         return product.to_dict()
 
     @classmethod
-    def list_products(cls) -> List[dict]:
-        return [
-            product.to_dict()
-            for product in cls._products.values()
-            if not product.is_deleted
+    def list_products(cls, page: int = 1, page_size: int = 10) -> List[dict]:
+        active_products = [
+        product.to_dict()
+        for product in cls._products.values()
+        if not product.is_deleted
         ]
+
+        total_items = len(active_products)
+        total_pages = (total_items + page_size - 1) // page_size  # ceiling division
+
+        # Pagination logic
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        paginated = active_products[start:end]
+
+        return {
+        "page": page,
+        "page_size": page_size,
+        "total_items": total_items,
+        "total_pages": total_pages,
+        "data": paginated
+        }
 
     @classmethod
     def update_product(cls, product_id: str, data: dict) -> dict:

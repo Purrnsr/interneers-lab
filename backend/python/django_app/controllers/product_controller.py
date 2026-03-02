@@ -15,7 +15,14 @@ def products(request, product_id=None):
                 return JsonResponse({"error": "Product not found"}, status=404)
             return JsonResponse(product, status=200)
 
-        products = ProductService.list_products()
+        # Read query params for pagination
+        try:
+            page = int(request.GET.get("page", 1))
+            page_size = int(request.GET.get("page_size", 10))
+        except ValueError:
+            return JsonResponse({"error": "page and page_size must be integers"}, status=400)
+
+        products = ProductService.list_products(page=page, page_size=page_size)
         return JsonResponse(products, safe=False, status=200)
 
     if request.method == "POST":
