@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
-
+from django_app.controllers.response_utils import success_response, error_response
 from django_app.services.product_service import ProductService
 
 
@@ -12,8 +12,8 @@ def products(request, product_id=None):
         if product_id:
             product = ProductService.get_product(product_id)
             if not product:
-                return JsonResponse({"error": "Product not found"}, status=404)
-            return JsonResponse(product, status=200)
+                return error_response("NOT_FOUND","Product not found", status=404)
+            return success_response(product, status=200)
 
         # Read query params for pagination
         try:
@@ -23,46 +23,49 @@ def products(request, product_id=None):
             return JsonResponse({"error": "page and page_size must be integers"}, status=400)
 
         products = ProductService.list_products(page=page, page_size=page_size)
-        return JsonResponse(products, safe=False, status=200)
+        return success_response(products,  status=200)
 
     if request.method == "POST":
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON"}, status=400)
+            return error_response("INVALID_JSON", "Invalid JSON", status=400)
+
 
         result = ProductService.create_product(data)
 
         if "error" in result:
-            return JsonResponse(result, status=400)
+           return error_response("VALIDATION_ERROR", result["error"], status=400)
 
-        return JsonResponse(result, status=201)
+
+        return success_response(result, status=201)
 
     if request.method == "PUT":
         if not product_id:
-            return JsonResponse({"error": "Product ID required"}, status=400)
+            return error_response("MISSING_ID", "Product ID required", status=400)
 
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON"}, status=400)
-
+            return error_response("INVALID_JSON", "Invalid JSON", status=400)
+        
         updated = ProductService.update_product(product_id, data)
 
         if not updated:
-            return JsonResponse({"error": "Product not found"}, status=404)
+           return error_response("NOT_FOUND", "Product not found", status=404)
 
-        return JsonResponse(updated, status=200)
+        return success_response(updated, status=200)
 
     if request.method == "DELETE":
         if not product_id:
-            return JsonResponse({"error": "Product ID required"}, status=400)
+            return error_response("MISSING_ID", "Product ID required", status=400)
 
         deleted = ProductService.delete_product(product_id)
 
         if not deleted:
-            return JsonResponse({"error": "Product not found"}, status=404)
+            return error_response("NOT_FOUND", "Product not found", status=404)
 
-        return JsonResponse({"message": "Product deleted successfully"}, status=200)
-
-    return JsonResponse({"error": "Method not allowed"}, status=405)
+        return success_response(
+            {"message": "Product deleted successfully"},
+            status=200
+        )
