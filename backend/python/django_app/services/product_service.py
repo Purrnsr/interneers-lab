@@ -1,7 +1,28 @@
 from typing import Dict, List
 import uuid
 
+class Product:
+    def __init__(self, name: str, description: str, category: str,
+                 price: float, brand: str, quantity: int):
+        self.id = str(uuid.uuid4())
+        self.name = name.strip()
+        self.description = description.strip()
+        self.category = category.strip()
+        self.price = price
+        self.brand = brand.strip()
+        self.quantity = quantity
+        self.is_deleted = False   # for soft delete
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "category": self.category,
+            "price": self.price,
+            "brand": self.brand,
+            "quantity": self.quantity,
+        }
 class ProductService:
     """
     Service layer responsible for product business logic.
@@ -9,7 +30,7 @@ class ProductService:
     """
 
     # In-memory data store
-    _products: Dict[str, dict] = {}
+    _products: Dict[str, Product] = {}
 
     @classmethod
     def create_product(cls, data: dict) -> dict:
@@ -36,44 +57,73 @@ class ProductService:
           return {"error": "price must be a positive number"}
 
 
-         #Validate quantity
+        #Validate quantity
         if not isinstance(data["quantity"], int) or data["quantity"] < 0:
           return {"error": "quantity must be a non-negative integer"}
 
-        product_id = str(uuid.uuid4())
+        product = Product(
+            name=data["name"],
+            description=data["description"],
+            category=data["category"],
+            price=data["price"],
+            brand=data["brand"],
+            quantity=data["quantity"],
+        )
 
-        product = {
-        "id": product_id,
-        "name": data["name"].strip(),
-        "description": data["description"].strip(),
-        "category": data["category"].strip(),
-        "price": data["price"],
-        "brand": data["brand"].strip(),
-        "quantity": data["quantity"],
-    }
-
-        cls._products[product_id] = product
-        return product
+        cls._products[product.id] = product
+        return product.to_dict()
 
     @classmethod
     def get_product(cls, product_id: str) -> dict:
-        return cls._products.get(product_id)
+        product = cls._products.get(product_id)
+
+        if not product or product.is_deleted:
+            return None
+
+        return product.to_dict()
 
     @classmethod
     def list_products(cls) -> List[dict]:
-        return list(cls._products.values())
+        return [
+            product.to_dict()
+            for product in cls._products.values()
+            if not product.is_deleted
+        ]
 
     @classmethod
     def update_product(cls, product_id: str, data: dict) -> dict:
-        if product_id not in cls._products:
+        product = cls._products.get(product_id)
+
+        if not product or product.is_deleted:
             return None
 
-        cls._products[product_id].update(data)
-        return cls._products[product_id]
+        # Update allowed fields only
+        if "name" in data:
+            product.name = data["name"].strip()
+
+        if "description" in data:
+            product.description = data["description"].strip()
+
+        if "category" in data:
+            product.category = data["category"].strip()
+
+        if "price" in data:
+            product.price = data["price"]
+
+        if "brand" in data:
+            product.brand = data["brand"].strip()
+
+        if "quantity" in data:
+            product.quantity = data["quantity"]
+
+        return product.to_dict()
 
     @classmethod
-    def delete_product(cls, product_id: str) -> bool:
-        if product_id in cls._products:
-            del cls._products[product_id]
-            return True
-        return False
+    def delete_product(cls, product_id: str):
+        product = cls._products.get(product_id)
+
+        if not product or product.is_deleted:
+            return None
+
+        product.is_deleted = True
+        return product.to_dict()
