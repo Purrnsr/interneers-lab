@@ -114,23 +114,36 @@ class ProductService:
         if not product or product.is_deleted:
             return None
 
-        # Update allowed fields only
+    # Validate and update allowed fields only
+
         if "name" in data:
+            if not isinstance(data["name"], str) or not data["name"].strip():
+                return {"error": "name must be a non-empty string"}
             product.name = data["name"].strip()
 
         if "description" in data:
+            if not isinstance(data["description"], str) or not data["description"].strip():
+                return {"error": "description must be a non-empty string"}
             product.description = data["description"].strip()
 
         if "category" in data:
+            if not isinstance(data["category"], str) or not data["category"].strip():
+                return {"error": "category must be a non-empty string"}
             product.category = data["category"].strip()
 
-        if "price" in data:
-            product.price = data["price"]
-
         if "brand" in data:
+            if not isinstance(data["brand"], str) or not data["brand"].strip():
+                return {"error": "brand must be a non-empty string"}
             product.brand = data["brand"].strip()
 
+        if "price" in data:
+            if not isinstance(data["price"], (int, float)) or data["price"] <= 0:
+                return {"error": "price must be a positive number"}
+            product.price = data["price"]
+
         if "quantity" in data:
+            if not isinstance(data["quantity"], int) or data["quantity"] < 0:
+                return {"error": "quantity must be a non-negative integer"}
             product.quantity = data["quantity"]
 
         return product.to_dict()

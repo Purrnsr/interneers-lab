@@ -53,7 +53,8 @@ def products(request, product_id=None):
 
         if not updated:
            return error_response("NOT_FOUND", "Product not found", status=404)
-
+        if "error" in updated:
+            return error_response("VALIDATION_ERROR", updated["error"], status=400)
         return success_response(updated, status=200)
 
     if request.method == "DELETE":
