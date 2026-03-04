@@ -1,37 +1,12 @@
+from django_app.models.product import Product
+from django_app.repositories.product_repository import ProductRepository
 from typing import Dict, List
 import uuid
-
-class Product:
-    def __init__(self, name: str, description: str, category: str,
-                 price: float, brand: str, quantity: int):
-        self.id = str(uuid.uuid4())
-        self.name = name.strip()
-        self.description = description.strip()
-        self.category = category.strip()
-        self.price = price
-        self.brand = brand.strip()
-        self.quantity = quantity
-        self.is_deleted = False   # for soft delete
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "description": self.description,
-            "category": self.category,
-            "price": self.price,
-            "brand": self.brand,
-            "quantity": self.quantity,
-        }
 class ProductService:
     """
     Service layer responsible for product business logic.
     In-memory storage for Week 2.
     """
-
-    # In-memory data store
-    _products: Dict[str, Product] = {}
-
     @classmethod
     def create_product(cls, data: dict) -> dict:
         """
@@ -70,12 +45,12 @@ class ProductService:
             quantity=data["quantity"],
         )
 
-        cls._products[product.id] = product
+        ProductRepository.create(product)
         return product.to_dict()
 
     @classmethod
     def get_product(cls, product_id: str) -> dict:
-        product = cls._products.get(product_id)
+        product = ProductRepository.get(product_id)
 
         if not product or product.is_deleted:
             return None
@@ -86,7 +61,7 @@ class ProductService:
     def list_products(cls, page: int = 1, page_size: int = 10) -> List[dict]:
         active_products = [
         product.to_dict()
-        for product in cls._products.values()
+        for product in ProductRepository.list()
         if not product.is_deleted
         ]
 
@@ -109,8 +84,7 @@ class ProductService:
 
     @classmethod
     def update_product(cls, product_id: str, data: dict) -> dict:
-        product = cls._products.get(product_id)
-
+        product = ProductRepository.get(product_id)
         if not product or product.is_deleted:
             return None
 
@@ -146,14 +120,12 @@ class ProductService:
                 return {"error": "quantity must be a non-negative integer"}
             product.quantity = data["quantity"]
 
+        ProductRepository.update(product)
         return product.to_dict()
 
     @classmethod
     def delete_product(cls, product_id: str):
-        product = cls._products.get(product_id)
-
-        if not product or product.is_deleted:
-            return None
-
-        product.is_deleted = True
-        return product.to_dict()
+        deleted = ProductRepository.delete(product_id)
+        if not deleted:
+         return None
+        return {"message": "Product deleted successfully"}
