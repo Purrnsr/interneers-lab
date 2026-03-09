@@ -1,9 +1,10 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
+from django_app.models.requests.product_request import ProductCreateRequest
 from django_app.controllers.response_utils import success_response, error_response
 from django_app.services.product_service import ProductService
-
+from django_app.models.responses.product_response import ProductResponse
 
 
 @csrf_exempt
@@ -13,7 +14,14 @@ def products(request, product_id=None):
             product = ProductService.get_product(product_id)
             if not product:
                 return error_response("NOT_FOUND","Product not found", status=404)
-            return success_response(product, status=200)
+            response = ProductResponse(product)
+            return success_response(response.to_dict(), status=200)
+        updated_after = request.GET.get("updated_after")
+
+        if updated_after:
+            products = ProductService.list_products_updated_after(updated_after)
+            return success_response(products, status=200)
+
 
         # Read query params for pagination
         try:
@@ -23,6 +31,10 @@ def products(request, product_id=None):
             return JsonResponse({"error": "page and page_size must be integers"}, status=400)
 
         products = ProductService.list_products(page=page, page_size=page_size)
+        products["data"] = [
+            ProductResponse(p).to_dict()
+            for p in products["data"]
+        ]
         return success_response(products,  status=200)
 
     if request.method == "POST":
@@ -31,12 +43,14 @@ def products(request, product_id=None):
         except json.JSONDecodeError:
             return error_response("INVALID_JSON", "Invalid JSON", status=400)
 
+        # Create request model
+        request_model = ProductCreateRequest(data)
+        # Validate request
+        validation_error = request_model.validate()
+        if validation_error:
+            return error_response("VALIDATION_ERROR", validation_error["error"], status=400)
 
         result = ProductService.create_product(data)
-
-        if "error" in result:
-           return error_response("VALIDATION_ERROR", result["error"], status=400)
-
 
         return success_response(result, status=201)
 

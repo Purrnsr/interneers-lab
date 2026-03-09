@@ -129,3 +129,8 @@ class ProductService:
         if not deleted:
          return None
         return {"message": "Product deleted successfully"}
+    @classmethod
+    def list_products_updated_after(cls, timestamp: str):
+        products = ProductRepository.list_updated_after(timestamp)
+
+        return [product.to_dict() for product in products]

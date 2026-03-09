@@ -1,16 +1,27 @@
+from mongoengine import Document, StringField, FloatField, IntField, BooleanField, DateTimeField
 import uuid
+from datetime import datetime
 
 
-class Product:
-    def __init__(self, name, description, category, price, brand, quantity):
-        self.id = str(uuid.uuid4())
-        self.name = name
-        self.description = description
-        self.category = category
-        self.price = price
-        self.brand = brand
-        self.quantity = quantity
-        self.is_deleted = False
+class Product(Document):
+    id = StringField(primary_key=True, default=lambda: str(uuid.uuid4()))
+
+    name = StringField(required=True)
+    description = StringField(required=True)
+    category = StringField(required=True)
+    brand = StringField(required=True)
+
+    price = FloatField(required=True)
+    quantity = IntField(required=True)
+
+    is_deleted = BooleanField(default=False)
+
+    created_at = DateTimeField(default=datetime.utcnow)
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+    meta = {
+        "collection": "products"
+    }
 
     def to_dict(self):
         return {
@@ -18,7 +29,9 @@ class Product:
             "name": self.name,
             "description": self.description,
             "category": self.category,
-            "price": self.price,
             "brand": self.brand,
+            "price": self.price,
             "quantity": self.quantity,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
         }
