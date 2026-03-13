@@ -122,3 +122,9 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 from django_app.repositories.mongo_connection import *
+
+import os
+from django_app.scripts.seed_categories import run as seed_categories
+
+if os.environ.get("RUN_MAIN") == "true":
+    seed_categories()
