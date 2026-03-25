@@ -5,9 +5,29 @@ from django_app.models.requests.product_request import ProductCreateRequest
 from django_app.controllers.response_utils import success_response, error_response
 from django_app.services.product_service import ProductService
 from django_app.models.responses.product_response import ProductResponse
-import csv
 from django.views.decorators.csrf import csrf_exempt
-from django_app.models.product_category import ProductCategory
+
+@csrf_exempt
+def bulk_upload_products(request):
+
+    if request.method != "POST":
+        return error_response("METHOD_NOT_ALLOWED", "Only POST allowed", status=405)
+
+    if "file" not in request.FILES:
+        return error_response("NO_FILE", "CSV file required", status=400)
+
+    result = ProductService.bulk_create_products(request.FILES["file"])
+
+    if "error" in result:
+        message = result["error"]
+
+        # SAFETY FIX 
+        if isinstance(message, list):
+            message = message[0]
+
+        return error_response("VALIDATION_ERROR", message, status=400)
+
+    return success_response(result, status=201)
 
 @csrf_exempt
 def products(request, product_id=None):
@@ -40,7 +60,6 @@ def products(request, product_id=None):
 
             return success_response(products, status=200)
         
-
         # Read query params for pagination
         try:
             page = int(request.GET.get("page", 1))
@@ -67,9 +86,13 @@ def products(request, product_id=None):
         validation_error = request_model.validate()
         if validation_error:
             return error_response("VALIDATION_ERROR", validation_error["error"], status=400)
-
+        
         result = ProductService.create_product(data)
-
+        if "error" in result:
+            message = result["error"]
+            if isinstance(message, list):
+                 message = message[0]
+            return error_response("VALIDATION_ERROR", message, status=400)
         return success_response(result, status=201)
 
     if request.method == "PUT":
@@ -86,6 +109,9 @@ def products(request, product_id=None):
         if not updated:
            return error_response("NOT_FOUND", "Product not found", status=404)
         if "error" in updated:
+            message=updated["error"]
+            if isinstance(message, list):
+                message = message[0]
             return error_response("VALIDATION_ERROR", updated["error"], status=400)
         return success_response(updated, status=200)
 
@@ -102,60 +128,3 @@ def products(request, product_id=None):
             {"message": "Product deleted successfully"},
             status=200
         )
-
-
-@csrf_exempt
-def bulk_upload_products(request):
-
-    if request.method != "POST":
-        return error_response("METHOD_NOT_ALLOWED", "Only POST allowed", status=405)
-
-    if "file" not in request.FILES:
-        return error_response("NO_FILE", "CSV file required", status=400)
-
-    file = request.FILES["file"]
-
-    decoded = file.read().decode("utf-8").splitlines()
-    reader = csv.DictReader(decoded)
-
-    created_products = []
-    errors = []
-
-    for row in reader:
-
-        safe_row = dict(row)  # JSON safe copy
-
-        try:
-            row["price"] = float(row["price"])
-            row["quantity"] = int(row["quantity"])
-        except ValueError:
-            errors.append({"row": safe_row, "error": "Invalid numeric values"})
-            continue
-
-        category_title = row["category"]
-        category = ProductCategory.objects(title=category_title).first()
-
-        if not category:
-            errors.append({
-                "row": safe_row,
-                "error": f"Category '{category_title}' not found"
-            })
-            continue
-
-        row["category"] = category
-
-        result = ProductService.create_product(row)
-
-        if "error" in result:
-            errors.append({"row": safe_row, "error": result["error"]})
-        else:
-            created_products.append(result)
-
-    return success_response(
-        {
-            "created_count": len(created_products),
-            "products": created_products,
-            "errors": errors
-        },
-        status=201
-    )

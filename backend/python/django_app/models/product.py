@@ -10,7 +10,6 @@ class Product(Document):
 
     name = StringField(required=True)
     description = StringField(required=True)
-    category = StringField(required=True)
     brand = StringField(required=True)
 
     price = FloatField(required=True)
@@ -19,7 +18,9 @@ class Product(Document):
     is_deleted = BooleanField(default=False)
     
     created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
+    def save(self, *args, **kwargs):
+        self.updated_at = datetime.utcnow()
+        return super().save(*args, **kwargs)
 
     meta = {
         "collection": "products"
