@@ -1,6 +1,9 @@
 from mongoengine import connect
+from django.conf import settings
 
-connect(
-    db="interneers_lab",
-    host="mongodb://root:example@localhost:27019/interneers_lab?authSource=admin"
-)
+
+def init_db():
+    if not settings.MONGO_URI:
+        raise Exception("MONGO_URI not set")
+
+    connect(host=settings.MONGO_URI)
