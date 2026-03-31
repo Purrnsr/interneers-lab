@@ -18,6 +18,7 @@ class Product(Document):
     is_deleted = BooleanField(default=False)
     
     created_at = DateTimeField(default=datetime.utcnow)
+    updated_at = DateTimeField(default=datetime.utcnow)
     def save(self, *args, **kwargs):
         self.updated_at = datetime.utcnow()
         return super().save(*args, **kwargs)
@@ -45,5 +46,5 @@ class Product(Document):
             "quantity": self.quantity,
             "category": category_id,
             "created_at": self.created_at,
-            "updated_at": self.updated_at
+            "updated_at": getattr(self, "updated_at", None)
         }

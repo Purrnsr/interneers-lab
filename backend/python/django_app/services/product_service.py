@@ -15,7 +15,7 @@ class ProductService:
 
         logger.info("Creating product")
 
-        #  VALIDATION FIRST (NO try-catch)
+        #  VALIDATION FIRST 
         required_fields = ["name", "description", "category", "price", "brand", "quantity"]
 
         for field in required_fields:
