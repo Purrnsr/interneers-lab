@@ -30,10 +30,14 @@ INSTALLED_APPS = [
 
     # Your app (IMPORTANT: AppConfig)
     "django_app.apps.DjangoAppConfig",
+    "corsheaders",
 ]
 
 # MIDDLEWARE
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -108,3 +112,5 @@ STATIC_URL = "static/"
 # DEFAULT PK
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 print("Mongo URI:", MONGO_URI)
+
+CORS_ALLOW_ALL_ORIGINS = True
