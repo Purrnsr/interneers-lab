@@ -13,7 +13,7 @@
     "@types/react-dom": "19.0.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "react-router-dom": "^7.1.5",
+    "react-router-dom": "^7.14.0",
     "react-scripts": "5.0.1",
     "sass": "^1.84.0",
     "typescript": "^5.7.2",
@@ -23,7 +23,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "eslint src --ext .ts,.tsx",
+    "format": "prettier --write src/"
   },
   "browserslist": {
     "production": [
